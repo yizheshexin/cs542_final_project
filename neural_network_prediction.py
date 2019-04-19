@@ -3,14 +3,16 @@
 
 # In[53]:
 
-
+import time
 import pandas as pd
 import numpy
 import tensorflow as tf
 from tensorflow.keras.layers import Dense
 import sklearn.model_selection as cross_validation
 pd.set_option("display.max_columns", 100)
+import os
 
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # In[17]:
 
@@ -77,7 +79,7 @@ one_hot_district = pd.get_dummies(data['DISTRICT'])
 new_data_district = data[['YEAR', 'MONTH', 'DAY', 'HOUR']].merge(one_hot_district,left_index = True, right_index = True)
 new_data_district = new_data_district.merge(one_hot,left_index = True, right_index = True)
 new_data_district = new_data_district.dropna()
-
+new_data_district = (new_data_district - new_data_district.min())/(new_data_district.max()-new_data_district.min())
 
 
 
@@ -120,13 +122,27 @@ x_train, x_test, y_train, y_test = cross_validation.train_test_split(x_data, y_d
 # In[238]:
 
 
-sgd = tf.keras.optimizers.SGD(lr=0.25, momentum=0.1, decay=0.1, nesterov=False)
-model_district = tf.keras.models.Sequential()
+sgd = tf.keras.optimizers.SGD(lr=0.3, momentum=0.01, decay=0.01, nesterov=False)
+try:
+    print('load exsited model')
+    model_district = tf.keras.models.load_model('result_model.model')
+except:
+    print('no model can be loaded, create a new model')
+    model_district = tf.keras.models.Sequential()
 
-model_district.add(Dense(100, input_dim=16,activation = 'sigmoid'))
-model_district.add(Dense(1000,activation = 'elu'))
-model_district.add(Dense(1000,activation = 'selu'))
-model_district.add(Dense(1000,activation = 'softplus'))
+model_district.add(Dense(128, input_dim=16,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
+model_district.add(Dense(128,activation = 'relu'))
 model_district.add(Dense(67,activation = 'softmax'))
 model_district.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
@@ -137,10 +153,15 @@ model_district.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=[
 count = 0
 while True:
     count += 1
-    result = model_district.fit(x_train, y_train, batch_size = 128)
+    result = model_district.fit(x_train, y_train, batch_size = 1024)
     print('loop time:',count)
     print('acc:',result.history['acc'][0])
-    if result.history['acc'][0]>0.3:
+    print('loss:',result.history['loss'][0])
+    if count % 10 == 0:
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
+        model_district.save('result_model.model')
+    if result.history['acc'][0]>0.2:
         break
 
 
@@ -148,4 +169,4 @@ while True:
 
 
 model_district.save('result_model.model')
-
+model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
