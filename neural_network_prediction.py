@@ -7,11 +7,11 @@ import time
 import pandas as pd
 import numpy
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import Dense, InputLayer, Dropout, Flatten, BatchNormalization, Conv1D, Activation
 import sklearn.model_selection as cross_validation
 pd.set_option("display.max_columns", 100)
 import os
+from tensorflow.keras.callbacks import TensorBoard
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -122,7 +122,41 @@ x_train, x_test, y_train, y_test = cross_validation.train_test_split(x_data, y_d
 
 # In[238]:
 
+dense_layers = [3,4,5,6]
+layer_unit_sizes = [1024,1500,2048]
+#conv_layers = [3]
 
+for dense_layer in dense_layers:
+    for layer_size in layer_unit_sizes:
+        NAME = "{}-nodes-{}-dense-{}".format(layer_size, dense_layer, int(time.time()))
+        print(NAME)
+
+        model = tf.keras.models.Sequential()
+
+        model.add(Dense(layer_size, input_shape=(x_train.shape[1],)))
+        model.add(Activation('relu'))
+
+        for _ in range(dense_layer):
+            model.add(Dense(layer_size))
+            model.add(Activation('relu'))
+
+        model.add(Dense(67,activation = 'softmax'))
+
+        tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
+
+        model.compile(loss='categorical_crossentropy',
+                      optimizer='adam',
+                      metrics=['accuracy'],
+                      )
+
+        model.fit(x_train, y_train,
+                  batch_size=128,
+                  epochs=20,
+                  callbacks=[tensorboard])
+
+
+
+'''
 sgd = tf.keras.optimizers.SGD(lr=0.25, momentum=0.01, decay=0.01, nesterov=True)
 
 if flag:
@@ -148,24 +182,24 @@ else:
 
 # In[244]:
 
-
 count = 0
 while True:
     count += 1
-    result = model_district.fit(x_train, y_train, batch_size = 128,)
+    tensorboard = TensorBoard(log_dir="logs/")
+    model_district.fit(x_train, y_train, batch_size = 1280, epochs = 3, callbacks=[tensorboard])
     print('loop time:',count)
     print('acc:',result.history['acc'][0])
     print('loss:',result.history['loss'][0])
-    if count % 200 == 0:
-        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
-        model_district.save('result_model.model')
-    if result.history['acc'][0]>0.5:
-        break
-
+    #if count % 200 == 0:
+    #    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    #    model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
+    #    model_district.save('result_model.model')
+    #if result.history['acc'][0]>0.5:
+    #    break
+'''
 
 # In[234]:
 
 
 model_district.save('result_model.model')
-model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
+#model_district.save('result_model'+str(time.time()).split('.')[0]+'.model')
