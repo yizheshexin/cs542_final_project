@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, InputLayer, Dropout, Flatten, BatchNormalization, Conv1D, Activation,LSTM
+from tensorflow.keras.layers import GRU, Dense, InputLayer, Dropout, Flatten, BatchNormalization, Conv1D, Activation,LSTM
 import sklearn.model_selection as cross_validation
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.callbacks import ModelCheckpoint, ModelCheckpoint
@@ -17,6 +17,7 @@ from collections import Counter
 pd.set_option("display.max_columns", 100)
 import os
 from tensorflow.keras.callbacks import TensorBoard
+from sklearn.preprocessing import normalize
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -72,7 +73,7 @@ time_interval = []
 for each in sort_dict:
     time_interval.append(timestamp_int_dic[each])
 
-sequence_length = 721
+sequence_length = 72
 result = []
 for index in range(len(time_interval) - sequence_length):
     result.append(time_interval[index: index + sequence_length])
@@ -82,7 +83,10 @@ result = np.array(result)
 # In[148]:
 
 
+
 x_train, x_test, y_train, y_test = cross_validation.train_test_split(result[:,:-1], result[:,-1], test_size=0.3)
+x_train = normalize(x_train)
+x_test = normalize(x_test)
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
@@ -91,21 +95,30 @@ x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
 
 model = Sequential()
-model.add(LSTM(128, input_shape=(x_train.shape[1:]), return_sequences=True))
+model.add(GRU(256, input_shape=(x_train.shape[1:]), return_sequences=True))
 model.add(Dropout(0.2))
-#model.add(BatchNormalization())  #normalizes activation outputs, same reason you want to normalize your input data.
+model.add(BatchNormalization())  #normalizes activation outputs, same reason you want to normalize your input data.
 
-model.add(LSTM(128, return_sequences=True))
+model.add(GRU(256, return_sequences=True))
 model.add(Dropout(0.1))
-#model.add(BatchNormalization())
+model.add(BatchNormalization())
 
-model.add(LSTM(128, return_sequences=True))
+model.add(GRU(256, return_sequences=True))
 model.add(Dropout(0.2))
-#model.add(BatchNormalization())
-model.add(LSTM(128))
+model.add(BatchNormalization())
+
+model.add(GRU(256, return_sequences=True))
+model.add(Dropout(0.1))
+model.add(BatchNormalization())
+
+model.add(GRU(256, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(BatchNormalization())
+
+model.add(GRU(256))
 model.add(Dropout(0.1))
 
-model.add(Dense(32, activation='relu'))
+model.add(Dense(128, activation='relu'))
 #model.add(Dropout(0.2))
 
 model.add(Dense(1))
@@ -114,8 +127,8 @@ model.add(Dense(1))
 # In[150]:
 
 
-opt = tf.keras.optimizers.Adam(lr=0.001, decay=1e-6)
-
+#opt = tf.keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+opt = tf.keras.optimizers.Adam(lr=0.005, decay=1e-6)
 # Compile model
 model.compile(
     loss='mean_squared_error',
@@ -127,7 +140,7 @@ model.compile(
 # In[151]:
 
 
-NAME = 'RNN_b2_all_crime'
+NAME = 'RNN_b2_all_crime_new'+'-{}-'.format(str(sequence_length))+str(time.time())
 tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
 
 filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"  # unique file name that will include the epoch and the validation acc for that epoch
