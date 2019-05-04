@@ -97,6 +97,8 @@ layer_unit_sizes = [64,128,256]
 
 for lstm_layer in lstm_layers:
     for layer_unit_size in layer_unit_sizes:
+        print('lstm_layer:',lstm_layer)
+        print('layer_unit_size:',layer_unit_size)
         model = Sequential()
         model.add(LSTM(layer_unit_size, input_shape=(x_train.shape[1:]), return_sequences=True))
         model.add(Dropout(0.2))
@@ -129,8 +131,8 @@ for lstm_layer in lstm_layers:
         NAME = '5_3_RNN_b2_all_crime'+'lstm_{}_units_{}'.format(lstm_layer,layer_unit_size)+str(time.time())
         tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
 
-        filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"  # unique file name that will include the epoch and the validation acc for that epoch
-        checkpoint = ModelCheckpoint("models/{}.model".format(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')) # saves only the best ones
+        #filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"  # unique file name that will include the epoch and the validation acc for that epoch
+        #checkpoint = ModelCheckpoint("models/{}.model".format(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')) # saves only the best ones
 
 
 # In[152]:
@@ -140,7 +142,7 @@ for lstm_layer in lstm_layers:
             x_train, y_train,
             batch_size=256,
             epochs=10,
-            callbacks=[tensorboard, checkpoint]
+            callbacks=[tensorboard]
         )
         score = model.evaluate(x_test, y_test, verbose=0)
         print('Test loss:', score[0])
