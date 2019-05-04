@@ -92,74 +92,59 @@ x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
 
 # In[149]:
+lstm_layers = [2,3,4]
+layer_unit_sizes = [64,128,256]
 
+for lstm_layer in lstm_layers:
+    for layer_unit_size in layer_unit_sizes:
+        model = Sequential()
+        model.add(LSTM(layer_unit_size, input_shape=(x_train.shape[1:]), return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())  #normalizes activation outputs, same reason you want to normalize your input data.
+        
+        for _ in range(lstm_layer):
+            model.add(LSTM(layer_unit_size, return_sequences=True))
+            model.add(Dropout(0.2))
+            model.add(BatchNormalization())
+        
+        model.add(LSTM(256))
+        model.add(Dropout(0.1))
 
-model = Sequential()
-model.add(GRU(256, input_shape=(x_train.shape[1:]), return_sequences=True))
-model.add(Dropout(0.2))
-model.add(BatchNormalization())  #normalizes activation outputs, same reason you want to normalize your input data.
+        model.add(Dense(128, activation='relu'))
+        model.add(Dense(1))
 
-model.add(GRU(256, return_sequences=True))
-model.add(Dropout(0.1))
-model.add(BatchNormalization())
-
-model.add(GRU(256, return_sequences=True))
-model.add(Dropout(0.2))
-model.add(BatchNormalization())
-
-model.add(GRU(256, return_sequences=True))
-model.add(Dropout(0.1))
-model.add(BatchNormalization())
-
-model.add(GRU(256, return_sequences=True))
-model.add(Dropout(0.2))
-model.add(BatchNormalization())
-
-model.add(GRU(256))
-model.add(Dropout(0.1))
-
-model.add(Dense(128, activation='relu'))
-#model.add(Dropout(0.2))
-
-model.add(Dense(1))
-
-
-# In[150]:
-
-
-#opt = tf.keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-opt = tf.keras.optimizers.Adam(lr=0.005, decay=1e-6)
+        #opt = tf.keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+        opt = tf.keras.optimizers.Adam(lr=0.005, decay=1e-6)
 # Compile model
-model.compile(
-    loss='mean_squared_error',
-    optimizer=opt,
-    metrics=['accuracy']
-)
+        model.compile(
+            loss='mean_squared_error',
+            optimizer=opt,
+            metrics=['accuracy']
+        )
 
 
 # In[151]:
 
 
-NAME = 'RNN_b2_all_crime_new'+'-{}-'.format(str(sequence_length))+str(time.time())
-tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
+        NAME = '5_3_RNN_b2_all_crime'+'lstm_{}_units_{}'.format(lstm_layer,layer_unit_size)+str(time.time())
+        tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
 
-filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"  # unique file name that will include the epoch and the validation acc for that epoch
-checkpoint = ModelCheckpoint("models/{}.model".format(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')) # saves only the best ones
+        filepath = "RNN_Final-{epoch:02d}-{val_acc:.3f}"  # unique file name that will include the epoch and the validation acc for that epoch
+        checkpoint = ModelCheckpoint("models/{}.model".format(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')) # saves only the best ones
 
 
 # In[152]:
 
 
-model.fit(
-    x_train, y_train,
-    batch_size=256,
-    epochs=20,
-    validation_data=(x_test, y_test),
-    callbacks=[tensorboard, checkpoint]
-)
-score = model.evaluate(x_test, y_test, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
-# Save model
-model.save("models/{}".format(NAME))
-
+        model.fit(
+            x_train, y_train,
+            batch_size=256,
+            epochs=10,
+            callbacks=[tensorboard, checkpoint]
+        )
+        score = model.evaluate(x_test, y_test, verbose=0)
+        print('Test loss:', score[0])
+        print('Test accuracy:', score[1])
+        # Save model
+        model.save("models/{}".format(NAME))
+ #           validation_data=(x_test, y_test),
